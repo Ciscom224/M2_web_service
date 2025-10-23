@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="SolvencyVerificationService"
+             targetNamespace="urn:solvency.verification.service:v1"
+             xmlns="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:tns="urn:solvency.verification.service:v1"
+             xmlns:xs="http://www.w3.org/2001/XMLSchema"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/">
+
+  <types>
+   <xs:schema targetNamespace="urn:solvency.verification.service:v1"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:tns="urn:solvency.verification.service:v1">
+  <xs:import namespace="urn:solvency.verification.service:v1"
+             schemaLocation="solvency.xsd"/>
+</xs:schema>
+  </types>
+
+  <message name="VerifySolvencyRequest">
+    <part name="parameters" element="tns:VerifySolvencyRequest"/>
+  </message>
+
+  <message name="VerifySolvencyResponse">
+    <part name="parameters" element="tns:VerifySolvencyResponse"/>
+  </message>
+
+  <portType name="SolvencyVerificationPortType">
+    <operation name="VerifySolvency">
+      <input message="tns:VerifySolvencyRequest"/>
+      <output message="tns:VerifySolvencyResponse"/>
+    </operation>
+  </portType>
+
+  <binding name="SolvencyVerificationBinding" type="tns:SolvencyVerificationPortType">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+    <operation name="VerifySolvency">
+      <soap:operation soapAction="urn:VerifySolvency"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+  </binding>
+
+  <service name="SolvencyVerificationService">
+    <port name="SolvencyVerificationPort" binding="tns:SolvencyVerificationBinding">
+      <soap:address location="http://localhost:8000/"/>
+    </port>
+  </service>
+</definitions>

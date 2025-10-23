@@ -1,0 +1,5 @@
+{
+  "client-001": { "debt": 5000, "latePayments": 2, "hasBankruptcy": false },
+  "client-002": { "debt": 2000, "latePayments": 0, "hasBankruptcy": false },
+  "client-003": { "debt": 10000, "latePayments": 5, "hasBankruptcy": true }
+}

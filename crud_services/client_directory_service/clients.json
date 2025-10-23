@@ -1,0 +1,5 @@
+{
+  "client-001": { "name": "John Doe", "address": "123 Main St" },
+  "client-002": { "name": "Alice Smith", "address": "456 Elm St" },
+  "client-003": { "name": "Bob Johnson", "address": "789 Oak St" }
+}

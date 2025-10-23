@@ -1,0 +1,5 @@
+{
+  "client-001": { "monthlyIncome": 4000, "monthlyExpenses": 3000 },
+  "client-002": { "monthlyIncome": 3000, "monthlyExpenses": 2500 },
+  "client-003": { "monthlyIncome": 6000, "monthlyExpenses": 5500 }
+}

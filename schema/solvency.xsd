@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:solvency.verification.service:v1"
+           xmlns="urn:solvency.verification.service:v1"
+           elementFormDefault="qualified">
+
+  <!-- Client -->
+  <xs:simpleType name="ClientId">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="client-\d{3}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="ClientIdentity">
+    <xs:sequence>
+      <xs:element name="name" type="xs:string"/>
+      <xs:element name="address" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Financials -->
+  <xs:complexType name="Financials">
+    <xs:sequence>
+      <xs:element name="MonthlyIncome">
+        <xs:simpleType>
+          <xs:restriction base="xs:decimal">
+            <xs:minInclusive value="0"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="Expenses">
+        <xs:simpleType>
+          <xs:restriction base="xs:decimal">
+            <xs:minInclusive value="0"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Credit History -->
+  <xs:complexType name="CreditHistory">
+    <xs:sequence>
+      <xs:element name="debt">
+        <xs:simpleType>
+          <xs:restriction base="xs:decimal">
+            <xs:minInclusive value="0"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="late" type="xs:nonNegativeInteger"/>
+      <xs:element name="hasBankruptcy" type="xs:boolean"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Credit Score -->
+  <xs:simpleType name="CreditScore">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="0"/>
+      <xs:maxInclusive value="1000"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Solvency Status -->
+  <xs:simpleType name="SolvencyStatus">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="solvent"/>
+      <xs:enumeration value="not_solvent"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Explanations -->
+  <xs:complexType name="Explanations">
+    <xs:sequence>
+      <xs:element name="creditScoreExplanation">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="incomeVsExpensesExplanation">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="creditHistoryExplanation">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Solvency Report -->
+  <xs:complexType name="SolvencyReport">
+    <xs:sequence>
+      <xs:element name="clientIdentity" type="ClientIdentity"/>
+      <xs:element name="financials" type="Financials"/>
+      <xs:element name="creditHistory" type="CreditHistory"/>
+      <xs:element name="creditScore" type="CreditScore"/>
+      <xs:element name="solvencyStatus" type="SolvencyStatus"/>
+      <xs:element name="explanations" type="Explanations"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Request / Response -->
+  <xs:element name="VerifySolvencyRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="clientId" type="ClientId"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="VerifySolvencyResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="report" type="SolvencyReport"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
