@@ -1,17 +1,11 @@
 services:
-  client_directory_service:
-    build: ./crud_services/client_directory_service
-    ports:
-      - "8001:8001"
-  credit_bureau_service:
-    build: ./crud_services/credit_bureau_service
-    ports:
-      - "8003:8003"
-  financial_data_service:
-    build: ./crud_services/financial_data_service
-    ports:
-      - "8002:8002"
   ie_service:
     build: ./ie_service
     ports:
       - "8004:8004"
+solvability:
+    build: ./solvability
+    ports:
+      - "8000:8000"
+    depends_on:
+      - ie_service
