@@ -2,9 +2,10 @@ services:
   ie_service:
     build: ./ie_service
     ports:
-      - "8004:8004"
-solvability:
-    build: ./solvability
+      - "8001:8001"
+
+  solvency_service:
+    build: ./solvency_service
     ports:
       - "8000:8000"
     depends_on:

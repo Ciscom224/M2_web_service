@@ -1,4 +1,3 @@
-# Image de base
 FROM python:3.10-slim
 
 
@@ -12,7 +11,7 @@ COPY . /app
 RUN pip install --no-cache-dir spyne==2.14.0 lxml
 
 # Port
-EXPOSE 8000
+EXPOSE 8002
 
 # lancement du service
 CMD ["python", "main.py"]

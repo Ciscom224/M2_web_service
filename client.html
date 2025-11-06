@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Service Client Prêt</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+    h1 { color: #333; }
+    input, textarea { width: 100%; padding: 8px; margin: 5px 0; border-radius: 5px; border: 1px solid #ccc; }
+    button { padding: 10px 20px; margin-top: 10px; border: none; border-radius: 5px; background-color: #333; color: white; cursor: pointer; }
+    button:hover { background-color: #555; }
+    .result { margin-top: 20px; padding: 15px; background: #fff; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .solvable { color: green; font-weight: bold; }
+    .non-solvable { color: red; font-weight: bold; }
+    .loading { color: #007BFF; font-style: italic; }
+  </style>
+</head>
+<body>
+  <div id="auth">
+    <h1>Authentification</h1>
+    <input type="text" id="id_client" placeholder="ID Client (ex: client-001)">
+    <input type="password" id="code_secret" placeholder="Code Secret">
+    <button onclick="login()">Se Connecter</button>
+  </div>
+
+  <div id="service" style="display:none;">
+    <h1>Demande de Prêt Immobilier</h1>
+    <textarea id="demande" placeholder="Ex : Je souhaite un prêt immobilier de 250000 euros sur 20 ans pour acheter une maison à Lyon..."></textarea><br>
+    <button onclick="submitDemande()">Soumettre</button>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    let auth = {};
+
+    function login() {
+      const id = document.getElementById('id_client').value.trim();
+      const code = document.getElementById('code_secret').value.trim();
+
+      if (!/^client-\d{3}$/.test(id)) {
+        return alert("⚠️ Le format du Client ID doit être client-XXX (ex: client-001)");
+      }
+      if (code === "") return alert("Veuillez entrer le code secret");
+
+      auth.id_client = id;
+      auth.code_secret = code;
+
+      alert("✅ Connexion réussie !");
+      document.getElementById("auth").style.display = "none";
+      document.getElementById("service").style.display = "block";
+    }
+
+    async function submitDemande() {
+      const texte = document.getElementById('demande').value.trim();
+      if (!texte) return alert("Veuillez entrer votre demande.");
+      console.log(texte);
+      
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "<p class='loading'>⏳ Analyse en cours...</p>";
+
+      // Construction de la requête SOAP pour le service Solvability (port 8000)
+      const soapRequest = `
+      <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                        xmlns:urn="urn:solvency.verification.service:v1">
+         <soapenv:Body>
+            <urn:VerifySolvency>
+               <urn:clientId>${auth.id_client}</urn:clientId>
+               <urn:demandeTexte>${texte}</urn:demandeTexte>
+            </urn:VerifySolvency>
+         </soapenv:Body>
+      </soapenv:Envelope>`;
+
+      try {
+        const response = await fetch("http://localhost:8000/", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "text/xml;charset=UTF-8",
+            "SOAPAction": "VerifySolvency"
+          },
+          body: soapRequest
+          
+          
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP : ${response.status}`);
+
+        }
+        const responseText = await response.text();
+        console.log("🧾 Réponse SOAP :", responseText);
+
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(responseText, "text/xml");
+
+        const ns = "urn:solvency.verification.service:v1";
+        const get = (tag) => xmlDoc.getElementsByTagNameNS(ns, tag)[0]?.textContent || "Non disponible";
+
+        const status = get("solvencyStatus");
+        const score = get("creditScore");
+        const explanation = get("creditScoreExplanation");
+
+        const isSolvent = status === "solvent";
+
+        resultDiv.innerHTML = `
+          <h3>Résultat d'analyse</h3>
+          <p><strong>Client :</strong> ${auth.id_client}</p>
+          <p><strong>Statut :</strong> <span class="${isSolvent ? 'solvable' : 'non-solvable'}">${status}</span></p>
+          <p><strong>Score :</strong> ${score}</p>
+          <p><strong>Commentaire :</strong> ${explanation}</p>
+        `;
+
+      } catch (error) {
+        console.error("Erreur :", error);
+        resultDiv.innerHTML = `<p style="color:red;">❌ Erreur lors de la requête : ${error.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
