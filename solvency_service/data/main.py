@@ -38,6 +38,8 @@ class FinancialDataService(ServiceBase):
             monthlyIncome=record["monthlyIncome"],
             monthlyExpenses=record["monthlyExpenses"]
         )
+    
+    
 
 # --- Application SOAP ---
 application = Application(

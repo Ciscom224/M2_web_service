@@ -1,0 +1,30 @@
+{
+  "clients": [
+    {
+      "clientId": "C001",
+      "monthlyIncome": 5000,
+      "monthlyDebtPayments": 1500
+    },
+    {
+      "clientId": "C002",
+      "monthlyIncome": 3000,
+      "monthlyDebtPayments": 1200
+    },
+    {
+      "clientId": "C003",
+      "monthlyIncome": 7000,
+      "monthlyDebtPayments": 2500
+    },
+    {
+      "clientId": "C004",
+      "monthlyIncome": 4000,
+      "monthlyDebtPayments": 1000
+    },
+    {
+      "clientId": "C005",
+      "monthlyIncome": 6000,
+      "monthlyDebtPayments": 2000
+    }
+  ]
+}
+
