@@ -1,0 +1,29 @@
+# === Core SOAP & Web Services ===
+spyne==2.14.0              # Framework SOAP pour Python
+zeep==4.2.1                # Client SOAP (pour appels inter-services)
+lxml==4.9.3                # Parsing et validation XML/XSD
+defusedxml==0.7.1          # Sécurité XML
+
+# === Web Server ===
+Flask==3.0.3               # Serveur web léger pour exposer les endpoints
+Werkzeug==3.0.2            # Utilitaire pour Flask
+
+# === Logs & Monitoring ===
+coloredlogs==15.0.1        # Logs colorés et lisibles
+python-dotenv==1.0.1       # Chargement de variables d'environnement (.env)
+
+# === Tests & Validation ===
+pytest==8.3.2              # Tests unitaires
+requests==2.32.3           # Appels HTTP pour tester les services
+xmlschema==2.4.0           # Validation stricte contre les XSD
+
+# === NLP / Extraction (ie_service) ===
+spacy==3.7.2               # Traitement du langage naturel
+fr-core-news-md==3.7.2     # Modèle français (pour ie_service)
+nltk==3.9.1                # NLP classique
+
+# === Machine Learning (credit_scoring_service) ===
+scikit-learn==1.5.1        # Modèles ML pour score de crédit
+numpy==1.26.4
+pandas==2.2.3
+
