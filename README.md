@@ -30,15 +30,15 @@ Avant de lancer le projet, assure-toi d’avoir :
     └── solvency.wsdl
 
 
-| Service                        | Port | Wsdl                      |  URL Service                       |
-| ------------------------------ | ---- | ------------------------- | -----------------------------------|
-| `ie_service`                   | 8001 | http://0.0.0.0:8001/?wsdl | http://ie_service:8001/            |
-| `credit_scoring_service`       | 8002 | http://0.0.0.0:8002/?wsdl | http://credit_scoring_service:8002/|
-| `decision_solvability_service` | 8003 | http://0.0.0.0:8003/?wsdl | http://decision_solvability_service:8003/
-| `ratio_endettement_service`    | 8004 | http://0.0.0.0:8004/?wsdl | http://ratio_endettement_service:8004/
-| `explain_service`              | 8005 | http://0.0.0.0:8005/?wsdl | http://explain_service:8005/
-| `property_evaluation_service`  | 8006 | http://0.0.0.0:8006/?wsdl | http://property_evaluation_service:8006/
-| `solvency_service`             | 8000 | http://0.0.0.0:8000/?wsdl |
+| Service                        | Port | Wsdl                      |  URL Service                              |
+| ------------------------------ | ---- | ------------------------- | ------------------------------------------|
+| `ie_service`                   | 8001 | http://0.0.0.0:8001/?wsdl | http://ie_service:8001/                   |
+| `credit_scoring_service`       | 8002 | http://0.0.0.0:8002/?wsdl | http://credit_scoring_service:8002/.      |
+| `decision_solvability_service` | 8003 | http://0.0.0.0:8003/?wsdl | http://decision_solvability_service:8003/ |
+| `ratio_endettement_service`    | 8004 | http://0.0.0.0:8004/?wsdl | http://ratio_endettement_service:8004/    |
+| `explain_service`              | 8005 | http://0.0.0.0:8005/?wsdl | http://explain_service:8005/.             |
+| `property_evaluation_service`  | 8006 | http://0.0.0.0:8006/?wsdl | http://property_evaluation_service:8006/  |
+| `solvency_service`             | 8000 | http://0.0.0.0:8000/?wsdl |                                           |
 
 ## 🚀 Lancer le projet avec Docker
 ### Construction des images
