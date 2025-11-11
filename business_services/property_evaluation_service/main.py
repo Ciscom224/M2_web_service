@@ -59,10 +59,10 @@ class PropertyEvaluationService(ServiceBase):
 
         # État
         desc = data.property_description.lower()
-        if any(w in desc for w in ["neuf", "rénové"]):
+        if any(w in desc for w in ["neuve", "rénové","neuf"]):
             estimated_value *= 1.1
             report_parts.append("État excellent : +10%")
-        elif "rénover" in desc:
+        elif "rénové" in desc:
             estimated_value *= 0.8
             report_parts.append("À rénover : -20%")
 
