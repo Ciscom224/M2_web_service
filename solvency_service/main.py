@@ -272,6 +272,49 @@ class SolvencyService(ServiceBase):
             solvency_status = text_of(find_with_ns_or_local(root, "solvencyStatus", ns)) or "unknown"
         except Exception as e:
             logging.error(f"Erreur DecisionService: {e}")
+        
+            # --- 5️⃣ Évaluation de la Propriété ---
+            property_value = 0.0
+            can_proceed = "false"
+            property_report = ""
+
+            try:
+                soap_request = f"""
+                    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:property.evaluation:v1">
+                    <soapenv:Body>
+                        <urn:EvaluateProperty>
+                         <urn:request>
+                            <urn:request>
+                                <urn:amount>{ie_amount}</urn:amount>
+                                <urn:duration_years>{int(ie_duration)}</urn:duration_years>
+                                <urn:property_type>{ie_property_type}</urn:property_type>
+                                <urn:property_description>{ie_description}</urn:property_description>
+                                <urn:location>{ie_location}</urn:location>
+                            </urn:request>
+                        </urn:request>
+                        </urn:EvaluateProperty>
+                    </soapenv:Body>
+                    </soapenv:Envelope>
+                """
+
+                resp = requests.post(
+                    "http://property-eval:8007/",
+                    data=soap_request.encode("utf-8"),
+                    headers={"Content-Type": "text/xml;charset=UTF-8"},
+                    timeout=10
+                )
+                root = ET.fromstring(resp.content)
+                ns = {"soapenv": "http://schemas.xmlsoap.org/soap/envelope/", "tns": "urn:property.evaluation:v1"}
+
+                property_value = float(root.find(".//tns:estimatedValue", ns).text or 0.0)
+                can_proceed = root.find(".//tns:canProceed", ns).text or "false"
+                property_report = root.find(".//tns:evaluationReport", ns).text or ""
+
+                logging.info(f"Propriété : {property_value}€, canProceed={can_proceed}")
+
+            except Exception as e:
+                logging.error(f"Erreur property-eval: {e}")
+                property_report = f"Erreur : {str(e)}"
 
         # 6️⃣ Appel du service ExplanationService
         explanations = Explanations()

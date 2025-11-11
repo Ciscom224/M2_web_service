@@ -6,6 +6,6 @@ COPY . /app
 
 RUN pip install --no-cache-dir spyne==2.14.0 lxml
 
-EXPOSE 8006
+EXPOSE 8007
 
 CMD ["python", "main.py"]
