@@ -13,7 +13,7 @@ Avant de lancer le projet, assure-toi d’avoir :
   ```bash
   pip install -r requirements.txt
 
-
+````py
 ## 🧱 Structure du projet
 .
 ├── docker-compose.yml
@@ -29,7 +29,7 @@ Avant de lancer le projet, assure-toi d’avoir :
     ├── solvency.xsd
     └── solvency.wsdl
 
-
+````
 | Service                        | Port | Wsdl                      |  URL Service                              |
 | ------------------------------ | ---- | ------------------------- | ------------------------------------------|
 | `ie_service`                   | 8001 | http://0.0.0.0:8001/?wsdl | http://ie_service:8001/                   |
