@@ -17,7 +17,7 @@ class CreditHistory(ComplexModel):
     hasBankruptcy = Boolean
 
 class Explanations(ComplexModel):
-    __namespace__ = "urn:solvency.verification.service:v1"
+    __namespace__ = "urn:solvency.verifxication.service:v1"
     creditScoreExplanation = Unicode
     incomeVsExpensesExplanation = Unicode
     creditHistoryExplanation = Unicode

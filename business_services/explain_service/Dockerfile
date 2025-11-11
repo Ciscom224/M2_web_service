@@ -8,10 +8,10 @@ WORKDIR /app
 COPY . /app
 
 # Installation  des dépendances
-RUN pip install --no-cache-dir spyne==2.14.0 lxml requests
+RUN pip install --no-cache-dir spyne==2.14.0 lxml 
 
 # Port
-EXPOSE 8003
+EXPOSE 8005
 
 # lancement du service
 CMD ["python", "main.py"]

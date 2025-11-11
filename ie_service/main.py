@@ -91,6 +91,6 @@ wsgi_app = WsgiApplication(app)
 
 if __name__ == "__main__":
     from wsgiref.simple_server import make_server
-    logging.info("🚀 Service IE (v7) prêt sur http://ie_service:8001/?wsdl")
+    logging.info("🚀 Service IE (v7) prêt sur http://0.0.0.0:8001/?wsdl")
     server = make_server("0.0.0.0", 8001, wsgi_app)
     server.serve_forever()

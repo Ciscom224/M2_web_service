@@ -21,7 +21,7 @@ python service_solvabilite.py
 docker-compose build
 docker-compose up
 
-
+Je souhaite obtenir un crédit immobilier de 320000 € sur 25 ans pour financer l’achat d’une villa moderne avec piscine et garage à Marseille.
 
 
 

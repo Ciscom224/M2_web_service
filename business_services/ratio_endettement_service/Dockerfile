@@ -11,7 +11,7 @@ COPY . /app
 RUN pip install --no-cache-dir spyne==2.14.0 lxml
 
 # Port
-EXPOSE 8005
+EXPOSE 8004
 
 # lancement du service
 CMD ["python", "main.py"]

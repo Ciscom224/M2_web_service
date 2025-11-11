@@ -8,7 +8,6 @@ from wsgiref.simple_server import make_server
 # Modèle de retour
 # ----------------------
 class DebtRatioResult(ComplexModel):
-    clientId = Unicode
     debtRatio = Float  # Ratio en pourcentage
 
 # ----------------------
@@ -16,13 +15,13 @@ class DebtRatioResult(ComplexModel):
 # ----------------------
 class DebtRatioService(ServiceBase):
 
-    @rpc(Unicode, Float, Float, _returns=DebtRatioResult)
-    def ComputeDebtRatio(ctx, clientId, monthlyIncome, monthlyDebtPayments):
+    @rpc(Float, Float, _returns=DebtRatioResult)
+    def ComputeDebtRatio(ctx, monthlyIncome, monthlyDebtPayments):
         if monthlyIncome <= 0:
             ratio = 0.0  # éviter division par zéro
         else:
-            ratio = (monthlyDebtPayments / monthlyIncome) * 100
-        return DebtRatioResult(clientId=clientId, debtRatio=ratio)
+            ratio = ((monthlyDebtPayments/12.0) / monthlyIncome) * 100
+        return DebtRatioResult(debtRatio=ratio)
 
 # ----------------------
 # Définition du service SOAP
@@ -38,7 +37,6 @@ wsgi_app = WsgiApplication(application)
 # Serveur
 # ----------------------
 if __name__ == "__main__":
-    port = 8005
-    print(f"DebtRatioService running at http://ratio_endettement_service:{port}?wsdl")
-    server = make_server("0.0.0.0", port, wsgi_app)
+    print(f"DebtRatioService running at http://ratio_endettement_service:{8004}?wsdl")
+    server = make_server("0.0.0.0", 8004, wsgi_app)
     server.serve_forever()

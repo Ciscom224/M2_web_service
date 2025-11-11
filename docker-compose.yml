@@ -3,11 +3,57 @@ services:
     build: ./ie_service
     ports:
       - "8001:8001"
+    networks:
+      - solvency_network
 
+  credit_scoring_service:
+    build: ./business_services/credit_scoring_service
+    ports:
+      - "8002:8002"
+    networks:
+      - solvency_network
+
+  decision_solvability_service:
+    build: ./business_services/decision_solvability_service
+    ports:
+      - "8003:8003"
+    depends_on:
+      - ratio_endettement_service
+    networks:
+      - solvency_network
+
+  ratio_endettement_service:
+    build: ./business_services/ratio_endettement_service
+    ports:
+      - "8004:8004"
+    networks:
+      - solvency_network
+
+  explain_service:
+    build: ./business_services/explain_service
+    ports:
+      - "8005:8005"
+    networks:
+      - solvency_network
+
+  property_evaluation_service:
+    build: ./business_services/property_evaluation_service
+    ports:
+      - "8006:8006"
+    networks:
+      - solvency_network
   solvency_service:
     build: ./solvency_service
     ports:
       - "8000:8000"
     depends_on:
       - ie_service
-    
+      - credit_scoring_service
+      - decision_solvability_service
+      - explain_service
+    networks:
+      - solvency_network
+
+networks:
+  solvency_network:
+    driver: bridge
