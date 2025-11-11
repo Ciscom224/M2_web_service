@@ -12,9 +12,9 @@ Avant de lancer le projet, assure-toi d’avoir :
 - (Optionnel pour tests locaux) **Python 3.10+** et les dépendances installées :  
   ```bash
   pip install -r requirements.txt
-
-````py
+  
 ## 🧱 Structure du projet
+````py
 .
 ├── docker-compose.yml
 ├── solvency_service/                     # Service principal d'orchestration (port 8000)
