@@ -51,6 +51,7 @@ services:
       - credit_scoring_service
       - decision_solvability_service
       - explain_service
+      - property_evaluation_service
     networks:
       - solvency_network
 

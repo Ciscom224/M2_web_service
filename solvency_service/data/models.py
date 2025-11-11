@@ -22,6 +22,16 @@ class Explanations(ComplexModel):
     incomeVsExpensesExplanation = Unicode
     creditHistoryExplanation = Unicode
 
+
+class PropertyEvaluationResponse(ComplexModel):
+    __namespace__ = "urn:solvency.verifxication.service:v1"
+    estimatedValue = Float
+    legalCompliance = Boolean
+    evaluationReport = Unicode
+    canProceed = Boolean
+
+
+
 class SolvencyResponse(ComplexModel):
     """Réponse structurée du service de solvabilité"""
     __namespace__ = "urn:solvency.verification.service:v1"
@@ -32,3 +42,4 @@ class SolvencyResponse(ComplexModel):
     creditScore = Integer
     solvencyStatus = Unicode  # "solvent" ou "not_solvent"
     explanations = Explanations
+    propertyEvaluation = PropertyEvaluationResponse

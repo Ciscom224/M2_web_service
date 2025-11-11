@@ -1,4 +1,4 @@
-from spyne import Application, rpc, ServiceBase, Unicode
+from spyne import Application, rpc, ServiceBase, Unicode, Float
 from spyne.protocol.soap import Soap11
 from spyne.server.wsgi import WsgiApplication
 import requests
@@ -9,7 +9,14 @@ import xml.etree.ElementTree as ET
 from data.client_directory_data import ClientData
 from data.credit_data import CreditData
 from data.finance_data import FinancialData
-from data.models import SolvencyResponse, ClientIdentity, Financials, CreditHistory, Explanations
+from data.models import (
+    SolvencyResponse,
+    ClientIdentity,
+    Financials,
+    CreditHistory,
+    Explanations,
+    PropertyEvaluationResponse
+)
 
 # -------------------------------------------------------
 # 🔹 Configuration des logs
@@ -18,7 +25,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 
 # -------------------------
-# Middleware CORS (pour accès via navigateur)
+# Middleware CORS
 # -------------------------
 class CORSMiddleware:
     def __init__(self, app):
@@ -42,6 +49,31 @@ class CORSMiddleware:
         return self.app(environ, cors_start_response)
 
 
+# ---------- Fonctions utilitaires de parsing (robustes) ----------
+def find_with_ns_or_local(root, name, ns=None):
+    """
+    Essaie de trouver <prefix:name> en utilisant les namespaces fournis,
+    sinon cherche par local-name() (ignore namespace).
+    Retourne le premier élément trouvé ou None.
+    """
+    if ns:
+        # cherche avec namespace si possible
+        try:
+            elem = root.find(".//tns:" + name, ns)
+            if elem is not None:
+                return elem
+        except Exception:
+            pass
+    # fallback : ignore namespace
+    return root.find(".//*[local-name()='%s']" % name)
+
+
+def text_of(elem):
+    if elem is None or elem.text is None:
+        return None
+    return elem.text.strip()
+
+
 # -------------------------------------------------------
 # 🧠 Service principal d’orchestration
 # -------------------------------------------------------
@@ -56,7 +88,7 @@ class SolvencyService(ServiceBase):
         financial = FinancialData.get_client_financials(clientId)
         credit = CreditData.get_credit_history(clientId)
 
-        if not client or client["name"] == "Inconnu":
+        if not client or client.get("name") == "Inconnu":
             return SolvencyResponse(
                 solvencyStatus="error",
                 creditScore=0,
@@ -67,19 +99,24 @@ class SolvencyService(ServiceBase):
                 )
             )
 
-        # 2️⃣ Appel du service IE (extraction du montant + durée)
-        amount, duration = 0.0, 0
+        # 2️⃣ Appel du service IE (Extraction des infos)
+        extraction = {
+            "amount": 0.0,
+            "duration_years": 0,
+            "property_type": "Inconnu",
+            "property_description": "",
+            "location": "Inconnue"
+        }
         try:
-            soap_request = f"""
-            <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
-                              xmlns:urn="urn:ie.service:v7">
-               <soapenv:Body>
-                  <urn:extractInformation>
-                     <urn:text>{demandeTexte}</urn:text>
-                  </urn:extractInformation>
-               </soapenv:Body>
-            </soapenv:Envelope>
-            """
+            soap_request = f"""<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                  xmlns:tns="urn:ie.service:v7">
+   <soapenv:Body>
+      <tns:extractInformation>
+         <tns:text>{demandeTexte}</tns:text>
+      </tns:extractInformation>
+   </soapenv:Body>
+</soapenv:Envelope>"""
 
             resp = requests.post(
                 "http://ie_service:8001/",
@@ -87,18 +124,101 @@ class SolvencyService(ServiceBase):
                 headers={"Content-Type": "text/xml;charset=UTF-8"},
                 timeout=10
             )
-            resp.raise_for_status()
-            ns = {"soapenv": "http://schemas.xmlsoap.org/soap/envelope/",
-                  "tns": "urn:ie.service:v7"}
+            logging.info(f"IE service status: {resp.status_code}")
+            logging.debug(f"IE raw response: {resp.content.decode('utf-8', errors='ignore')}")
+
             root = ET.fromstring(resp.content)
-            result = root.find(".//tns:extractInformationResult", ns)
-            amount = float(result.find("tns:amount", ns).text or 0.0)
-            duration = int(result.find("tns:duration_years", ns).text or 0)
-            logging.info(f"📊 Montant extrait: {amount}, Durée: {duration} ans")
+            ns = {"soapenv": "http://schemas.xmlsoap.org/soap/envelope/", "tns": "urn:ie.service:v7"}
+
+            # Spyne renvoie souvent <extractInformationResponse> (pas necessarily a "Result" wrapper)
+            resp_elem = find_with_ns_or_local(root, "extractInformationResponse", ns)
+            if resp_elem is None:
+                # fallback : chercher les champs directement
+                resp_elem = root
+
+            # Lecture robuste des champs
+            amount_txt = text_of(find_with_ns_or_local(resp_elem, "amount", ns))
+            dur_txt = text_of(find_with_ns_or_local(resp_elem, "duration_years", ns))
+            ptype_txt = text_of(find_with_ns_or_local(resp_elem, "property_type", ns))
+            pdesc_txt = text_of(find_with_ns_or_local(resp_elem, "property_description", ns))
+            loc_txt = text_of(find_with_ns_or_local(resp_elem, "location", ns))
+
+            extraction["amount"] = float(amount_txt) if amount_txt else 0.0
+            extraction["duration_years"] = int(dur_txt) if dur_txt else 0
+            extraction["property_type"] = ptype_txt or "Inconnu"
+            extraction["property_description"] = pdesc_txt or ""
+            extraction["location"] = loc_txt or "Inconnue"
+
+            logging.info(f"🏠 Extraction réussie : {extraction}")
         except Exception as e:
             logging.error(f"Erreur IE_Service: {e}")
+            logging.debug("IE raw content (on exception): %s", resp.content.decode('utf-8', errors='ignore') if 'resp' in locals() else 'n/a')
 
-        # 3️⃣ Appel du service CreditScore
+        # 3️⃣ Appel du service PropertyEvaluation (envoi correct du bon élément racine)
+        property_eval = PropertyEvaluationResponse(
+            estimatedValue=0.0,
+            legalCompliance=False,
+            evaluationReport="Aucune évaluation disponible.",
+            canProceed=False
+        )
+        try:
+            # Construire le SOAP correctement : utiliser le préfixe tns défini dans xmlns:tns
+            soap_request = f"""
+                <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                                xmlns:tns="urn:property.evaluation:v1">
+                <soapenv:Body>
+                        <tns:EvaluateProperty>
+                            <tns:data>
+                                <tns:amount>{extraction['amount']}</tns:amount>
+                                <tns:duration_years>{extraction['duration_years']}</tns:duration_years>
+                                <tns:property_type>{extraction['property_type']}</tns:property_type>
+                                <tns:property_description>{extraction['property_description']}</tns:property_description>
+                                <tns:location>{extraction['location']}</tns:location>
+                            </tns:data>
+                        </tns:EvaluateProperty>
+                </soapenv:Body>
+                </soapenv:Envelope>
+                """
+
+            resp = requests.post(
+                "http://property_evaluation_service:8006/",
+                data=soap_request.encode("utf-8"),
+                headers={"Content-Type": "text/xml;charset=UTF-8"},
+                timeout=10
+            )
+
+            logging.info(f"PropertyEvaluation status: {resp.status_code}")
+            logging.info(f"📦 Contenu brut reçu : {resp.content.decode('utf-8', errors='ignore')}")
+
+            root = ET.fromstring(resp.content)
+            ns = {"soapenv": "http://schemas.xmlsoap.org/soap/envelope/", "tns": "urn:property.evaluation:v1"}
+
+            # Cherche d'abord la response explicite, sinon tolère la réponse directe
+            result = find_with_ns_or_local(root, "EvaluatePropertyResponse", ns)
+            if result is None:
+                # parfois Spyne renvoie directement les champs sous la méthode response ou même sous Body
+                result = find_with_ns_or_local(root, "EvaluatePropertyResult", ns) or root
+
+            if result is not None:
+                est_txt = text_of(find_with_ns_or_local(result, "estimatedValue", ns))
+                legal_txt = text_of(find_with_ns_or_local(result, "legalCompliance", ns))
+                report_txt = text_of(find_with_ns_or_local(result, "evaluationReport", ns))
+                canproceed_txt = text_of(find_with_ns_or_local(result, "canProceed", ns))
+
+                property_eval = PropertyEvaluationResponse(
+                    estimatedValue=float(est_txt) if est_txt else 0.0,
+                    legalCompliance=(legal_txt == "true"),
+                    evaluationReport=report_txt or "",
+                    canProceed=(canproceed_txt == "true")
+                )
+                logging.info(f"🏡 Évaluation immobilière : {property_eval.evaluationReport}")
+            else:
+                logging.error("❌ Impossible de trouver EvaluatePropertyResponse/Result dans la réponse SOAP.")
+        except Exception as e:
+            logging.error(f"Erreur PropertyEvaluationService: {e}")
+            logging.debug("Property raw content on exception: %s", resp.content.decode('utf-8', errors='ignore') if 'resp' in locals() else 'n/a')
+
+        # 4️⃣ Appel du service CreditScore
         credit_score = 0
         try:
             soap_request = f"""
@@ -121,11 +241,12 @@ class SolvencyService(ServiceBase):
             )
             root = ET.fromstring(resp.content)
             ns = {"soapenv": "http://schemas.xmlsoap.org/soap/envelope/", "tns": "urn:creditscore.service:v1"}
-            credit_score = int(float(root.find(".//tns:score", ns).text or 0))
+            score_elem = find_with_ns_or_local(root, "score", ns)
+            credit_score = int(float(text_of(score_elem) or 0))
         except Exception as e:
             logging.error(f"Erreur CreditScoreService: {e}")
 
-        # 4️⃣ Appel du service DecisionService
+        # 5️⃣ Appel du service DecisionService
         solvency_status = "unknown"
         try:
             soap_request = f"""
@@ -148,11 +269,11 @@ class SolvencyService(ServiceBase):
             )
             root = ET.fromstring(resp.content)
             ns = {"soapenv": "http://schemas.xmlsoap.org/soap/envelope/", "tns": "urn:solvency.decision:v1"}
-            solvency_status = root.find(".//tns:solvencyStatus", ns).text or "unknown"
+            solvency_status = text_of(find_with_ns_or_local(root, "solvencyStatus", ns)) or "unknown"
         except Exception as e:
             logging.error(f"Erreur DecisionService: {e}")
 
-        # 5️⃣ Appel du service ExplanationService
+        # 6️⃣ Appel du service ExplanationService
         explanations = Explanations()
         try:
             soap_request = f"""
@@ -178,13 +299,13 @@ class SolvencyService(ServiceBase):
             )
             root = ET.fromstring(resp.content)
             ns = {"soapenv": "http://schemas.xmlsoap.org/soap/envelope/", "tns": "urn:explain.service:v1"}
-            explanations.creditScoreExplanation = root.find(".//tns:creditScoreExplanation", ns).text or ""
-            explanations.incomeVsExpensesExplanation = root.find(".//tns:incomeVsExpensesExplanation", ns).text or ""
-            explanations.creditHistoryExplanation = root.find(".//tns:creditHistoryExplanation", ns).text or ""
+            explanations.creditScoreExplanation = text_of(find_with_ns_or_local(root, "creditScoreExplanation", ns)) or ""
+            explanations.incomeVsExpensesExplanation = text_of(find_with_ns_or_local(root, "incomeVsExpensesExplanation", ns)) or ""
+            explanations.creditHistoryExplanation = text_of(find_with_ns_or_local(root, "creditHistoryExplanation", ns)) or ""
         except Exception as e:
             logging.error(f"Erreur ExplanationService: {e}")
 
-        # 6️⃣ Construction du retour structuré
+        # 7️⃣ Construction du retour structuré
         return SolvencyResponse(
             clientIdentity=ClientIdentity(name=client["name"], address=client["address"]),
             financials=Financials(MonthlyIncome=financial["MonthlyIncome"], Expenses=financial["Expenses"]),
@@ -193,7 +314,8 @@ class SolvencyService(ServiceBase):
             ),
             creditScore=credit_score,
             solvencyStatus=solvency_status,
-            explanations=explanations
+            explanations=explanations,
+            propertyEvaluation=property_eval
         )
 
 

@@ -21,9 +21,6 @@ class ExtractionResult(ComplexModel):
     property_type = Unicode
     property_description = Unicode
     location = Unicode
-    warning_message = Unicode  # Nouveau : champ pour signaler les erreurs ou avertissements
-
-
 
 
 
@@ -72,7 +69,6 @@ class IE_Service(ServiceBase):
             property_type=property_type or "Inconnu",
             property_description=property_description or "non détectée",
             location=location or "inconnue",
-            warning_message=warning_message
         )
 
 
