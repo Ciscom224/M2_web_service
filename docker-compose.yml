@@ -42,6 +42,12 @@ services:
       - "8006:8006"
     networks:
       - solvency_network
+  approbation_service:
+    build: ./business_services/approbation_service
+    ports:
+      - "8007:8007"
+    networks:
+      - solvency_network
   solvency_service:
     build: ./solvency_service
     ports:
@@ -52,6 +58,7 @@ services:
       - decision_solvability_service
       - explain_service
       - property_evaluation_service
+      - approbation_service
     networks:
       - solvency_network
 

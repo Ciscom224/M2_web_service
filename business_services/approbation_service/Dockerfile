@@ -1,13 +1,11 @@
-FROM python:3.11-slim
+FROM python:3.10-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY . /app
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir spyne==2.14.0 lxml
 
-COPY . .
-
-EXPOSE 8008
+EXPOSE 8007
 
 CMD ["python", "main.py"]

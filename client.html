@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Analyse de Solvabilité</title>
+  <title>Analyse de Solvabilité et Décision d’Approbation</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
     h1 { color: #333; }
@@ -87,10 +87,11 @@
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(responseText, "text/xml");
 
+      // Namespaces réels observés
       const ns = "urn:solvency.verification.service:v1";
       const nsExplain = "urn:solvency.verifxication.service:v1";
+      const nsApproval = "data.models";
 
-      // Fonction utilitaire
       const get = (nsURI, tag) => xmlDoc.getElementsByTagNameNS(nsURI, tag)[0]?.textContent || "Non disponible";
 
       // Données client
@@ -115,11 +116,18 @@
       const evaluationReport = get(nsExplain, "evaluationReport");
       const canProceed = get(nsExplain, "canProceed");
 
+      // Approbation finale
+      const approved = get(nsApproval, "approved");
+      const interestRate = get(nsApproval, "interestRate");
+      const maxLoanAmount = get(nsApproval, "maxLoanAmount");
+      const decisionReport = get(nsApproval, "decisionReport");
+
       const isSolvent = status === "solvent";
       const canBuy = canProceed === "true" || canProceed === "True";
+      const isApproved = approved === "true" || approved === "True";
 
       resultDiv.innerHTML = `
-        <h3>📋 Résultat d'analyse</h3>
+        <h3>📋 Résultat complet d’analyse</h3>
 
         <div class="section">
           <h4>👤 Informations client</h4>
@@ -141,7 +149,7 @@
         </div>
 
         <div class="section">
-          <h4>📊 Analyse</h4>
+          <h4>📊 Analyse globale</h4>
           <p><strong>Score :</strong> ${score}</p>
           <p><strong>Statut :</strong> <span class="${isSolvent ? 'solvable' : 'non-solvable'}">${status}</span></p>
         </div>
@@ -156,9 +164,17 @@
         <div class="section">
           <h4>🏠 Évaluation de la propriété</h4>
           <p><strong>Valeur estimée :</strong> ${estimatedValue} €</p>
-          <p><strong>Conformité légale :</strong> ${legalCompliance?' OUI ':'NON'}</p>
-          <p><strong>Rapport d’évaluation :</strong> ${evaluationReport}</p>
-          <p><strong>Peut procéder à l’achat :</strong> <span class="${canBuy ? 'solvable' : 'non-solvable'}">${canProceed ?'OUI':'NON'}</span></p>
+          <p><strong>Conformité légale :</strong> ${legalCompliance}</p>
+          <p><strong>Rapport :</strong> ${evaluationReport}</p>
+          <p><strong>Peut procéder à l’achat :</strong> <span class="${canBuy ? 'solvable' : 'non-solvable'}">${canProceed}</span></p>
+        </div>
+
+        <div class="section">
+          <h4>✅ Décision finale d’approbation</h4>
+          <p><strong>Approuvé :</strong> <span class="${isApproved ? 'solvable' : 'non-solvable'}">${approved}</span></p>
+          <p><strong>Taux d’intérêt :</strong> ${interestRate} %</p>
+          <p><strong>Montant maximum accordé :</strong> ${maxLoanAmount} €</p>
+          <p><strong>Rapport d’analyse :</strong> ${decisionReport}</p>
         </div>
       `;
     } catch (error) {

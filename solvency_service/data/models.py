@@ -31,6 +31,11 @@ class PropertyEvaluationResponse(ComplexModel):
     canProceed = Boolean
 
 
+class ApprovalResponse(ComplexModel):
+    approved = Boolean
+    interestRate = Float
+    maxLoanAmount = Float
+    decisionReport = Unicode
 
 class SolvencyResponse(ComplexModel):
     """Réponse structurée du service de solvabilité"""
@@ -43,3 +48,4 @@ class SolvencyResponse(ComplexModel):
     solvencyStatus = Unicode  # "solvent" ou "not_solvent"
     explanations = Explanations
     propertyEvaluation = PropertyEvaluationResponse
+    approvalResponse =ApprovalResponse

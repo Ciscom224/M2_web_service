@@ -15,7 +15,8 @@ from data.models import (
     Financials,
     CreditHistory,
     Explanations,
-    PropertyEvaluationResponse
+    PropertyEvaluationResponse,
+    ApprovalResponse
 )
 
 # -------------------------------------------------------
@@ -188,15 +189,14 @@ class SolvencyService(ServiceBase):
             )
 
             logging.info(f"PropertyEvaluation status: {resp.status_code}")
-            logging.info(f"📦 Contenu brut reçu : {resp.content.decode('utf-8', errors='ignore')}")
 
             root = ET.fromstring(resp.content)
             ns = {"soapenv": "http://schemas.xmlsoap.org/soap/envelope/", "tns": "urn:property.evaluation:v1"}
 
-            # Cherche d'abord la response explicite, sinon tolère la réponse directe
+           
             result = find_with_ns_or_local(root, "EvaluatePropertyResponse", ns)
             if result is None:
-                # parfois Spyne renvoie directement les champs sous la méthode response ou même sous Body
+               
                 result = find_with_ns_or_local(root, "EvaluatePropertyResult", ns) or root
 
             if result is not None:
@@ -217,6 +217,9 @@ class SolvencyService(ServiceBase):
         except Exception as e:
             logging.error(f"Erreur PropertyEvaluationService: {e}")
             logging.debug("Property raw content on exception: %s", resp.content.decode('utf-8', errors='ignore') if 'resp' in locals() else 'n/a')
+
+
+        
 
         # 4️⃣ Appel du service CreditScore
         credit_score = 0
@@ -272,49 +275,6 @@ class SolvencyService(ServiceBase):
             solvency_status = text_of(find_with_ns_or_local(root, "solvencyStatus", ns)) or "unknown"
         except Exception as e:
             logging.error(f"Erreur DecisionService: {e}")
-        
-            # --- 5️⃣ Évaluation de la Propriété ---
-            property_value = 0.0
-            can_proceed = "false"
-            property_report = ""
-
-            try:
-                soap_request = f"""
-                    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:property.evaluation:v1">
-                    <soapenv:Body>
-                        <urn:EvaluateProperty>
-                         <urn:request>
-                            <urn:request>
-                                <urn:amount>{ie_amount}</urn:amount>
-                                <urn:duration_years>{int(ie_duration)}</urn:duration_years>
-                                <urn:property_type>{ie_property_type}</urn:property_type>
-                                <urn:property_description>{ie_description}</urn:property_description>
-                                <urn:location>{ie_location}</urn:location>
-                            </urn:request>
-                        </urn:request>
-                        </urn:EvaluateProperty>
-                    </soapenv:Body>
-                    </soapenv:Envelope>
-                """
-
-                resp = requests.post(
-                    "http://property-eval:8007/",
-                    data=soap_request.encode("utf-8"),
-                    headers={"Content-Type": "text/xml;charset=UTF-8"},
-                    timeout=10
-                )
-                root = ET.fromstring(resp.content)
-                ns = {"soapenv": "http://schemas.xmlsoap.org/soap/envelope/", "tns": "urn:property.evaluation:v1"}
-
-                property_value = float(root.find(".//tns:estimatedValue", ns).text or 0.0)
-                can_proceed = root.find(".//tns:canProceed", ns).text or "false"
-                property_report = root.find(".//tns:evaluationReport", ns).text or ""
-
-                logging.info(f"Propriété : {property_value}€, canProceed={can_proceed}")
-
-            except Exception as e:
-                logging.error(f"Erreur property-eval: {e}")
-                property_report = f"Erreur : {str(e)}"
 
         # 6️⃣ Appel du service ExplanationService
         explanations = Explanations()
@@ -348,7 +308,58 @@ class SolvencyService(ServiceBase):
         except Exception as e:
             logging.error(f"Erreur ExplanationService: {e}")
 
+
+# appel du service approbation
+        
+        approval_response = None
+        try:
+            soap_request = f"""
+            <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                              xmlns:urn="urn:approval.decision:v1">
+               <soapenv:Body>
+                  <urn:MakeApprovalDecision>
+                     <urn:amount>{extraction['amount']}</urn:amount>
+                     <urn:duration>{extraction['duration_years']}</urn:duration>
+                     <urn:solvency>{solvency_status}</urn:solvency>
+                     <urn:prop_value>{property_eval.estimatedValue}</urn:prop_value>
+                     <urn:prop_ok>{str(property_eval.canProceed).lower()}</urn:prop_ok>
+                  </urn:MakeApprovalDecision>
+               </soapenv:Body>
+            </soapenv:Envelope>
+            """
+            
+            resp = requests.post(
+                "http://approbation_service:8007/",
+                data=soap_request.encode("utf-8"),
+                headers={"Content-Type": "text/xml;charset=UTF-8"},
+                timeout=10
+            )
+
+            root = ET.fromstring(resp.content)
+            ns = {"soapenv": "http://schemas.xmlsoap.org/soap/envelope/",
+                  "tns": "urn:approval.decision:v1"}
+
+            result = find_with_ns_or_local(root, "MakeApprovalDecisionResult", ns) or root
+
+            approval_response = ApprovalResponse(
+                approved=(text_of(find_with_ns_or_local(result, "approved", ns)) == "true"),
+                interestRate=float(text_of(find_with_ns_or_local(result, "interestRate", ns)) or 0.0),
+                maxLoanAmount=float(text_of(find_with_ns_or_local(result, "maxLoanAmount", ns)) or 0.0),
+                decisionReport=text_of(find_with_ns_or_local(result, "decisionReport", ns)) or ""
+            )
+            logging.info(f" sortie : {approval_response}")
+            logging.info(f"✅ Décision finale : {approval_response.decisionReport}")
+
+        except Exception as e:
+            logging.error(f"Erreur ApprovalService: {e}")
+            approval_response = ApprovalResponse(
+                approved=False,
+                interestRate=0.0,
+                maxLoanAmount=0.0,
+                decisionReport="Erreur de communication avec le service d'approbation."
+            )
         # 7️⃣ Construction du retour structuré
+       
         return SolvencyResponse(
             clientIdentity=ClientIdentity(name=client["name"], address=client["address"]),
             financials=Financials(MonthlyIncome=financial["MonthlyIncome"], Expenses=financial["Expenses"]),
@@ -358,7 +369,8 @@ class SolvencyService(ServiceBase):
             creditScore=credit_score,
             solvencyStatus=solvency_status,
             explanations=explanations,
-            propertyEvaluation=property_eval
+            propertyEvaluation=property_eval,
+            approvalResponse=approval_response
         )
 
 

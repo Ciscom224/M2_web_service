@@ -10,13 +10,13 @@ import requests
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # -------------------------------
-#Modèles SOAP
+# 🧱 Modèles SOAP
 # -------------------------------
 class DecisionResponse(ComplexModel):
     solvencyStatus = Unicode
 
 # -------------------------------
-#Service SOAP de Décision
+# 🧠 Service SOAP de Décision
 # -------------------------------
 class DecisionService(ServiceBase):
 
@@ -27,7 +27,7 @@ class DecisionService(ServiceBase):
         """
         logging.info(f"🧮 Évaluation décisionnelle : score={creditScore}")
 
-# ---Appel du service DebtRatio
+# --- 4️⃣ Appel du service DebtRatio
         debtRatio = 0.0
         try:
           
@@ -66,7 +66,7 @@ class DecisionService(ServiceBase):
         )
 
 # -------------------------------
-# Application SOAP
+# 🌐 Application SOAP
 # -------------------------------
 app = Application(
     [DecisionService],
@@ -78,7 +78,7 @@ app = Application(
 wsgi_app = WsgiApplication(app)
 
 # -------------------------------
-# Lancement du serveur
+# 🚀 Lancement du serveur
 # -------------------------------
 if __name__ == "__main__":
     from wsgiref.simple_server import make_server

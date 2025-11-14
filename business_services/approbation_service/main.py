@@ -24,17 +24,8 @@ class ApprovalResponse(ComplexModel):
     decisionReport = Unicode
 
 class ApprovalService(ServiceBase):
-    @rpc(ApprovalRequest, _returns=ApprovalResponse)
-    def MakeApprovalDecision(ctx, request):
-        data = request
-        client_id = data.clientId
-        amount = data.requestedAmount
-        duration = data.duration_years
-        solvency = data.solvencyStatus
-        prop_value = data.estimatedPropertyValue
-        prop_ok = data.propertyCanProceed
-
-        logging.info(f"Approbation pour {client_id}: {amount}€ sur {duration} ans")
+    @rpc(Float,Integer,Unicode,Float,Boolean, _returns=ApprovalResponse)
+    def MakeApprovalDecision(ctx, amount,duration,solvency,prop_value,prop_ok):
 
         report = []
         approved = False
@@ -107,6 +98,6 @@ wsgi_app = WsgiApplication(app)
 
 if __name__ == "__main__":
     from wsgiref.simple_server import make_server
-    logging.info("Approval Service ready on http://0.0.0.0:8008/?wsdl")
-    server = make_server("0.0.0.0", 8008, wsgi_app)
+    logging.info("Approval Service ready on http://0.0.0.0:8007/?wsdl")
+    server = make_server("0.0.0.0", 8007, wsgi_app)
     server.serve_forever()
